@@ -21,9 +21,6 @@
         "backgroundColor": "#ffffff"
       }
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
     "extra": {
       "googleWebClientId": "YOUR_GOOGLE_WEB_CLIENT_ID"
     }

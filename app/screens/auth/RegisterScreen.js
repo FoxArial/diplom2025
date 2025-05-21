@@ -1,40 +1,71 @@
 import React, { useState } from "react";
-import {View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Image} from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  Image,
+} from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import Icon2 from "react-native-vector-icons/FontAwesome";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import apps from "../src/firebaseConfig";
+import MaterialIcons from "@react-native-vector-icons/material-icons";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth, database } from "../../src/firebaseConfig";
+import { doc, setDoc } from "firebase/firestore";
 
 export default function RegisterScreen({ navigation }) {
-  const [email, setEmail] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [profileURL, setProfileURL] = useState("");
 
-  const auth = getAuth(apps); // Ініціалізація Firebase Authentication
-
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (password !== confirmPassword) {
       Alert.alert("Помилка", "Паролі не співпадають.");
       return;
     }
+    if (
+      userEmail !== "" &&
+      password !== "" &&
+      userName !== "" &&
+      profileURL !== ""
+    ) {
+      let response;
+      try {
+        response = await createUserWithEmailAndPassword(
+          auth,
+          userEmail,
+          password
+        );
+        await setDoc(doc(database, "users", response?.user?.uid), {
+          userName,
+          userEmail,
+          profileURL,
+          userID: response?.user?.uid,
+        });
 
-    createUserWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        const user = userCredential.user;
-        Alert.alert("Реєстрація завершена", `Привіт, ${user.email}!`);
-        navigation.navigate('Home');
-      })
-      .catch((error) => {
+        console.log("response.user: ", response?.user);
+        navigation.navigate("Home");
+      } catch (error) {
         Alert.alert("Помилка при реєстрації", error.message);
-      });
+      }
+    } else {
+      Alert.alert("Упс!", "Де інформація?");
+    }
   };
 
   return (
     <View style={styles.container}>
       {/* Назад */}
-      <TouchableOpacity onPress={() => navigation.navigate("Welcome")} style={styles.backButton}>
+      <TouchableOpacity
+        onPress={() => navigation.navigate("Welcome")}
+        style={styles.backButton}
+      >
         <Icon name="arrow-left" size={35} color="#4D2D8F" />
       </TouchableOpacity>
 
@@ -48,8 +79,24 @@ export default function RegisterScreen({ navigation }) {
           style={styles.input}
           placeholder="Пошта"
           placeholderTextColor="#777"
-          value={email}
-          onChangeText={setEmail}
+          value={userEmail}
+          onChangeText={setUserEmail}
+        />
+        {/* Поле для nickname */}
+        <TextInput
+          style={styles.input}
+          placeholder="Nickname"
+          placeholderTextColor="#777"
+          value={userName}
+          onChangeText={setUserName}
+        />
+        {/* Поле для url */}
+        <TextInput
+          style={styles.input}
+          placeholder="URL"
+          placeholderTextColor="#777"
+          value={profileURL}
+          onChangeText={setProfileURL}
         />
         {/* Поле для пароля */}
         <View style={styles.passwordInputContainer}>
@@ -63,7 +110,8 @@ export default function RegisterScreen({ navigation }) {
           />
           <TouchableOpacity
             onPress={() => setPasswordVisible(!passwordVisible)}
-            style={styles.eyeIcon}>
+            style={styles.eyeIcon}
+          >
             <Icon
               name={passwordVisible ? "eye-off" : "eye"}
               size={20}
@@ -83,7 +131,8 @@ export default function RegisterScreen({ navigation }) {
           />
           <TouchableOpacity
             onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
-            style={styles.eyeIcon}>
+            style={styles.eyeIcon}
+          >
             <Icon
               name={confirmPasswordVisible ? "eye-off" : "eye"}
               size={20}
@@ -103,17 +152,23 @@ export default function RegisterScreen({ navigation }) {
         Вже є аккаунт?{" "}
         <Text
           onPress={() => navigation.navigate("Login")}
-          style={styles.footerLink}>
+          style={styles.footerLink}
+        >
           Увійти.
         </Text>
       </Text>
 
       {/* Іконки для соціальних мереж */}
       <View style={styles.socialContainer}>
-        <View style={styles.iconsContainer}><Icon name="google" size={40} color="#4D2D8F"/></View>        
-        <View style={styles.iconsContainer}><Icon2 name="steam" size={40} color="#4D2D8F"/></View>
-        <View style={styles.iconsContainer}><Icon name="facebook" size={40} color="#4D2D8F"/></View>
-        
+        <View style={styles.iconsContainer}>
+          <Icon name="google" size={40} color="#4D2D8F" />
+        </View>
+        <View style={styles.iconsContainer}>
+          <Icon2 name="steam" size={40} color="#4D2D8F" />
+        </View>
+        <View style={styles.iconsContainer}>
+          <MaterialIcons name="discord" size={40} color="#4D2D8F" />
+        </View>
       </View>
     </View>
   );
@@ -125,8 +180,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#CFBCFF",
     paddingHorizontal: 20,
     paddingTop: 50,
-    justifyContent: 'center',
-    alignContent: 'center'
+    justifyContent: "center",
+    alignContent: "center",
   },
   backButton: {
     position: "absolute",
@@ -155,13 +210,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 3,
     elevation: 2,
-    width: "100%"
+    width: "100%",
   },
   passwordInputContainer: {
     flexDirection: "row",
     alignItems: "center",
     position: "relative",
-    width: "100%"
+    width: "100%",
   },
   eyeIcon: {
     position: "absolute",
@@ -193,14 +248,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     marginTop: 40,
-    justifyContent: "space-around"
+    justifyContent: "space-around",
   },
   iconsContainer: {
     width: 50,
     height: 50,
     backgroundColor: "#fff",
     borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center'
-  }
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });
